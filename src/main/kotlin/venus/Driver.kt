@@ -23,6 +23,8 @@ import venusbackend.simulator.cache.CacheError
 import venusbackend.simulator.cache.CacheHandler
 import venusbackend.simulator.cache.PlacementPolicy
 
+import venus.ExecutionHooks
+
 // using these imports only for type checks and fake DOM
 import kotlin.dom.addClass
 import kotlin.dom.removeClass
@@ -462,6 +464,7 @@ external val document: Document
                 val PandL = ProgramAndLibraries(listOf(prog), VFS)
                 val linked = Linker.link(PandL)
                 sim = Simulator(linked, VFS, simSettings)
+                sim.registerPlugin("ExecutionHooks", ExecutionHooks())
                 val args = Lexer.lex(getDefaultArgs())
                 for (arg in args) {
                     sim.addArg(arg)

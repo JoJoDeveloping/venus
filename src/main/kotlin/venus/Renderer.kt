@@ -13,7 +13,7 @@ import venusbackend.simulator.Simulator
 //import venusbackend.simulator.SimulatorError
 //import venusbackend.simulator.cache.BlockState
 import venusbackend.simulator.cache.ChangedBlockState
-//import venusbackend.simulator.diffs.*
+import venusbackend.simulator.diffs.*
 //import kotlin.browser.document
 //import kotlin.browser.window
 //import kotlin.dom.addClass
@@ -71,4 +71,7 @@ internal object Renderer : IRenderer  {
         eventEmitter?.emit("printConsole", thing)
     }
 
+    override fun updateRegister(id: Int, value: Number, setActive: Boolean) {
+        eventEmitter?.emit("updateRegister", id)
+    }
 }
