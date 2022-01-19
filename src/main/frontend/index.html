@@ -1602,23 +1602,6 @@
 
 <input id="venus_upload" type="file" multiple hidden>
 
-<script type="text/javascript">
-    /*
-      Make script tag and load it to page
-    */
-    function loadScript(url, onfail, onload) {
-        var urlelm = document.getElementById(url);
-        if (urlelm) {
-            urlelm.parentNode.removeChild(urlelm)
-        }
-        var script = document.createElement('script');
-        script.setAttribute("onerror", onfail);
-        script.setAttribute("onload", onload);
-        script.setAttribute("src", url);
-        script.setAttribute("id", url);
-        document.getElementsByTagName("head")[0].appendChild(script);
-    }
-</script>
 
 
 <script type="text/javascript" src="scripts/jquery.min.js"></script>
@@ -1634,7 +1617,7 @@
 <script type="text/javascript" src="js/codemirror/comment.js"></script>
 <script type="text/javascript" src="js/codemirror/autorefresh.js"></script>
 <script type="text/javascript" src="js/codemirror/lint.js"></script>
-<script type="text/javascript" src="scripts/main.js"></script>
+<script type="text/javascript" src="js/bundle.js"></script>
 <script type="text/javascript" src="scripts/terminal.js"></script>
 <script type="text/javascript" src="scripts/Draggable.min.js"></script>
 <script type="text/javascript" src="scripts/TweenMax.min.js"></script>

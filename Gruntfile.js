@@ -10,10 +10,23 @@ module.exports = function(grunt) {
             },
             venus: {
                 files: {
-                    'out/js/venus.js': ['build/kotlin-js-min/main/venus.js'],
-                    'out/js/kotlin.js': ['build/kotlin-js-min/main/kotlin.js'],
+                    'out/js/bundle.js': ['build/kotlin-js-min/main/bundle.js'],
                     'out/js/codemirror/codemirror.js': ['src/main/frontend/js/codemirror/*.js']
                 }
+            }
+        },
+        browserify: {
+            venus: {
+                options: {
+                    alias: {
+                        venus: './build/kotlin-js-min/main/venus.js',
+                        kotlin_raw: './build/kotlin-js-min/main/kotlin.js',
+                        kotlin: './src/main/frontend/js/kotlin_fix.js',
+                        venus_wrapper: './src/main/frontend/js/venus_main.js'
+                    }
+                },
+                src: ['src/main/frontend/js/main.js'],
+                dest: 'build/kotlin-js-min/main/bundle.js'
             }
         },
         cssmin: {
@@ -91,8 +104,9 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-cssmin');
     grunt.loadNpmTasks('grunt-contrib-htmlmin');
     grunt.loadNpmTasks('grunt-contrib-copy');
+    grunt.loadNpmTasks('grunt-browserify');
     grunt.registerTask('test', 'qunit:src');
-    grunt.registerTask('dist', ['uglify:venus', 'cssmin', 'htmlmin', 'copy:venus']);
+    grunt.registerTask('dist', ['browserify:venus', 'uglify:venus', 'cssmin', 'htmlmin', 'copy:venus']);
     grunt.registerTask('frontend', ['cssmin:venus', 'htmlmin:venus']);
     grunt.registerTask('distjvm', ['copy:jvm']);
 };
