@@ -5,6 +5,7 @@ function setup_venus() {
         window.venus = require('venus');
         window.venus_main = window.venus;
         window.driver = venus_main.venus.Driver;
+        window.driver.driver_init(false, venus_main.venus.WebFrontendRenderer);
         window.venus.api = venus_main.venus.api.API;
         window.simulatorAPI = venus_main.venus.api.venusbackend.simulator.Simulator;
         window.editor = document.getElementById("asm-editor");

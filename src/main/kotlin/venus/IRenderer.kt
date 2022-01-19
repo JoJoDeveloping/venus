@@ -21,13 +21,35 @@ import kotlin.dom.removeClass
 
 /* ktlint-enable no-wildcard-imports */
 
+@JsName("getRenderer") fun getRenderer() : IRenderer {
+    return IRenderer.getRenderer()
+}
+
+@JsName("setRenderer") fun setRenderer(r : IRenderer) {
+    IRenderer.setRenderer(r)
+}
+
 /**
  * This singleton is used to render different parts of the screen, it serves as an interface between the UI and the
  * internal simulator.
  *
  * @todo break this up into multiple objects
  */
-interface IRenderer {
+@JsName("IRenderer") interface IRenderer {
+
+    companion object {
+        var instance : IRenderer? = null
+
+        fun getRenderer() : IRenderer {
+            return instance!!;
+        }
+
+        fun setRenderer(renderer : IRenderer) {
+            instance = renderer;
+        }
+    }
+
+
     // TODO: maybe need to declare in Renderer as const
     val MEMORY_CONTEXT: Int
     // TODO: Can I delete this?
@@ -100,7 +122,7 @@ interface IRenderer {
      *
      * @param tab the name of the tab (currently "editor" or "simulator")
      */
-    @JsName("tabSetVisibility") private fun tabSetVisibility(tab: String, display: String) {
+    @JsName("tabSetVisibility") fun tabSetVisibility(tab: String, display: String) {
 
     }
 
@@ -133,7 +155,7 @@ interface IRenderer {
     /**
      * Renders the program listing under the debugger
      */
-    private fun renderProgramListing() {
+    fun renderProgramListing() {
 
     }
 
@@ -289,7 +311,7 @@ interface IRenderer {
      * @param id the id of the button to change
      * @param disabled whether or not to disable the button
      */
-    private fun setButtonDisabled(id: String, disabled: Boolean) {
+    fun setButtonDisabled(id: String, disabled: Boolean) {
     }
 
     /**
@@ -383,7 +405,7 @@ interface IRenderer {
      * @param wordAddress the address we want to show
      * @return true if we need to move the display
      */
-    private fun mustMoveMemoryDisplay(wordAddress: Int) = true
+    fun mustMoveMemoryDisplay(wordAddress: Int) = true
 
     /**
      * Renders a row of the memory.
@@ -408,15 +430,15 @@ interface IRenderer {
      *
      * @throws IndexOutOfBoundsException if b is not in -127..255
      */
-    private fun byteToHex(b: Int): String {
+    fun byteToHex(b: Int): String {
         val leftNibble = hexMap[b ushr 4]
         val rightNibble = hexMap[b and 15]
         return "$leftNibble$rightNibble"
     }
 
-    private fun byteToDec(b: Int): String = b.toByte().toString()
+    fun byteToDec(b: Int): String = b.toByte().toString()
 
-    private fun byteToUnsign(b: Int): String = b.toString()
+    fun byteToUnsign(b: Int): String = b.toString()
 
     /**
      * Converts a value to a two's complement hex number.
@@ -448,10 +470,10 @@ interface IRenderer {
         return toHex(value.toInt())
     }
 
-    private fun toUnsigned(value: Int): String =
+    fun toUnsigned(value: Int): String =
             if (value >= 0) value.toString() else (value + 0x1_0000_0000L).toString()
 
-    private fun toAscii(value: Int, num_nibbles: Int = 8): String {
+    fun toAscii(value: Int, num_nibbles: Int = 8): String {
         var s = ""
 //        for (i in 0..3) {
 //            val v = (value shr i * 8) and 0xFF
@@ -476,7 +498,7 @@ interface IRenderer {
     fun moveMemoryJump() {
     }
 
-    private fun moveMemoryBy(rows: Int) {
+    fun moveMemoryBy(rows: Int) {
     }
 
     fun moveMemoryUp() = moveMemoryBy(MEMORY_CONTEXT)

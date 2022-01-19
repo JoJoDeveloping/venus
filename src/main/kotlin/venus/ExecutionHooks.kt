@@ -13,7 +13,7 @@ class ExecutionHooks : SimulatorPlugin {
     override fun onStep(sim: Simulator, inst: MachineCode, prevPC: Number) {
         for (d in sim.postInstruction) {
             if (d is RegisterDiff) {
-                Renderer.updateRegister(d.id, d.v)
+                IRenderer.getRenderer().updateRegister(d.id, d.v)
             }
         }
     }

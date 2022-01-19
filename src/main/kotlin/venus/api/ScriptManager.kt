@@ -2,9 +2,9 @@ package venus.api
 
 import org.w3c.dom.get
 import venus.Driver
+import venus.IRenderer
 import kotlin.browser.document
 import kotlin.browser.window
-import venus.Renderer
 
 /**
 * This is used to add and remove external packages.
@@ -75,7 +75,7 @@ import venus.Renderer
                     var k = js("venuspackage.requires[i - 1]")
                     if (!packages.containsKey(k)) {
                         val msg = "This package requires '$k' which was not found in the currently installed packages! Thus it cannot be loaded!"
-                        Renderer.pkgMsg(msg)
+                        IRenderer.getRenderer().pkgMsg(msg)
                         console.warn(msg)
                         addPackageFailure(url)
                         return
@@ -103,7 +103,7 @@ import venus.Renderer
             val k = js("window.venuspackage.requires[i - 1]") as String
             if (!((packages.get(k))?.enabled ?: true)) {
                 val msg = "Could not enable package '${venuspackage.id}' because it requires a package which has been disabled ($k)!"
-                Renderer.pkgMsg(msg)
+                IRenderer.getRenderer().pkgMsg(msg)
                 console.warn(msg)
                 enabled = false
             }
@@ -136,11 +136,11 @@ import venus.Renderer
                 js("p.dependent.push(venuspackage.id)")
                 i--
             }
-            Renderer.rendererAddPackage(venuspackage.id, enabled, removable)
+            IRenderer.getRenderer().rendererAddPackage(venuspackage.id, enabled, removable)
             packages.put(venuspackage.id, venuspackage)
             updateLS()
             val msg = "Loaded script ($url)!"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
@@ -151,20 +151,20 @@ import venus.Renderer
     @JsName("addPackageFailure") fun addPackageFailure(url: String) {
         loading_packages.remove(url)
         val msg = "Could not load the script ($url)!"
-        Renderer.pkgMsg(msg)
+        IRenderer.getRenderer().pkgMsg(msg)
         console.warn(msg)
         js("window.venuspackage = undefined")
     }
 
     fun removePackage(id: String) {
         var msg = "Removing package '$id'!"
-        Renderer.pkgMsg(msg)
+        IRenderer.getRenderer().pkgMsg(msg)
         if (Driver.debug) {
             console.log(msg)
         }
         if (!packages.containsKey(id)) {
             msg = "Could not find package '$id'"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
@@ -204,16 +204,16 @@ import venus.Renderer
             """)
         updateLS()
         if (worked) {
-            Renderer.rendererRemovePackage(id)
+            IRenderer.getRenderer().rendererRemovePackage(id)
             msg = "Package '$id' uninstalled successfully!"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
         } else {
-            Renderer.rendererUpdatePackage(id, false)
+            IRenderer.getRenderer().rendererUpdatePackage(id, false)
             msg = "Could not remove package '$id'!"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
@@ -222,13 +222,13 @@ import venus.Renderer
 
     fun disablePackage(id: String) {
         var msg = "Disabling package '$id'!"
-        Renderer.pkgMsg(msg)
+        IRenderer.getRenderer().pkgMsg(msg)
         if (Driver.debug) {
             console.log(msg)
         }
         if (!packages.containsKey(id)) {
             msg = "Could not find package '$id'"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
@@ -237,7 +237,7 @@ import venus.Renderer
         val p = packages.get(id)
         if (p?.enabled == false) {
             msg = "Package '$id' is already disabled!"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
@@ -254,7 +254,7 @@ import venus.Renderer
             """)
         if (worked) {
             p?.enabled = false
-            Renderer.rendererUpdatePackage(id, false)
+            IRenderer.getRenderer().rendererUpdatePackage(id, false)
             updateLS()
             var i = js("p.dependent.length") as Int
             while (i > 0) {
@@ -263,14 +263,14 @@ import venus.Renderer
                 i--
             }
             msg = "Successfully disable package '$id'!"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
         } else {
-            Renderer.rendererUpdatePackage(id, true)
+            IRenderer.getRenderer().rendererUpdatePackage(id, true)
             msg = "Could not disable package '$id'!"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
@@ -279,13 +279,13 @@ import venus.Renderer
 
     fun enablePackage(id: String) {
         var msg = "Enabling package '$id'!"
-        Renderer.pkgMsg(msg)
+        IRenderer.getRenderer().pkgMsg(msg)
         if (Driver.debug) {
             console.log(msg)
         }
         if (!packages.containsKey(id)) {
             msg = "Could not find package '$id'"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
@@ -294,7 +294,7 @@ import venus.Renderer
         val p = packages.get(id)
         if (p?.enabled == true) {
             msg = "Package '$id' is already enabled!"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
@@ -305,9 +305,9 @@ import venus.Renderer
             val k = js("p.requires[i - 1]") as String
             if (!((packages.get(k))?.enabled ?: true)) {
                 val msg = "Could not enable package '${p?.id}' because it requires a package which has been disabled ($k)!"
-                Renderer.pkgMsg(msg)
+                IRenderer.getRenderer().pkgMsg(msg)
                 console.warn(msg)
-                Renderer.rendererUpdatePackage(id, false)
+                IRenderer.getRenderer().rendererUpdatePackage(id, false)
                 return
             }
             i--
@@ -323,17 +323,17 @@ import venus.Renderer
             """)
         if (worked) {
             p?.enabled = true
-            Renderer.rendererUpdatePackage(id, true)
+            IRenderer.getRenderer().rendererUpdatePackage(id, true)
             updateLS()
             msg = "Successfully enabled package '$id'!"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
         } else {
-            Renderer.rendererUpdatePackage(id, false)
+            IRenderer.getRenderer().rendererUpdatePackage(id, false)
             msg = "Could not enable package '$id'!"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }
@@ -342,13 +342,13 @@ import venus.Renderer
 
     fun togglePackage(id: String) {
         var msg = "Toggling package '$id'!"
-        Renderer.pkgMsg(msg)
+        IRenderer.getRenderer().pkgMsg(msg)
         if (Driver.debug) {
             console.log(msg)
         }
         if (!packages.containsKey(id)) {
             msg = "Could not find package '$id'"
-            Renderer.pkgMsg(msg)
+            IRenderer.getRenderer().pkgMsg(msg)
             if (Driver.debug) {
                 console.log(msg)
             }

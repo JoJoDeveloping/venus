@@ -89,17 +89,19 @@ external val document: Document
 
     var doCallingConventionCheck: Boolean = false
 
-    init {
+    @JsName("driver_init") fun driver_init(useNodeVFS : Boolean, renderer : IRenderer) {
         /* This code right here is so that you can add custom kotlin code even after venus has been loaded! */
         js("window.eval_in_venus_env = function (s) {return eval(s);}")
         js("load_update_message(\"Initializing Venus: Init\");")
+        VirtualFileSystem.setUseNode(useNodeVFS)
+        IRenderer.setRenderer(renderer);
         simState64.getReg(0)
         Linter.lint("")
         console.log("Loading driver...")
         mainCache.attach(false)
 
         useLS = LS.get("venus") == "true"
-        Renderer.renderButton(document.getElementById("sv") as HTMLButtonElement, useLS)
+        IRenderer.getRenderer().renderButton(document.getElementById("sv") as HTMLButtonElement, useLS)
 
         setTimeout(Driver::initTimeout, 5)
 
@@ -110,8 +112,8 @@ external val document: Document
         js("load_update_message(\"Initializing Venus: Local Storage\");")
         loadAll(useLS)
         js("load_update_message(\"Initializing Venus: Renderer\");")
-        Renderer.loadSimulator(sim)
-        Renderer.renderAssembleButtons()
+        IRenderer.getRenderer().loadSimulator(sim)
+        IRenderer.getRenderer().renderAssembleButtons()
         saveInterval = setInterval(Driver::saveIntervalFn, 10000)
         Driver.ready = true
         initFinish()
@@ -144,7 +146,7 @@ external val document: Document
     }
 
     @JsName("noAssemble") fun noAssemble() {
-        Renderer.renderSimButtons()
+        IRenderer.getRenderer().renderSimButtons()
     }
 
     fun getDefaultArgs(): String {
@@ -208,16 +210,16 @@ external val document: Document
                         for (arg in args) {
                             sim.addArg(arg)
                         }
-                        Renderer.loadSimulator(sim)
+                        IRenderer.getRenderer().loadSimulator(sim)
                         setCacheSettings()
-                        Renderer.updateCache(Address(0, MemSize.WORD))
+                        IRenderer.getRenderer().updateCache(Address(0, MemSize.WORD))
                     }
                 }
                 if (remove) {
                     VFS.remove(fpath)
                 }
             } catch (e: Throwable) {
-                Renderer.loadSimulator(Simulator(LinkedProgram(), VFS))
+                IRenderer.getRenderer().loadSimulator(Simulator(LinkedProgram(), VFS))
                 handleError("Open Simulator", e)
             }
         } else {
@@ -287,8 +289,8 @@ external val document: Document
         s = currentURL.searchParams.get("tab")
         if (s != null) {
             s = parseString(s.toString())
-            if (s in Renderer.mainTabs) {
-                Renderer.renderTab(s, Renderer.mainTabs)
+            if (s in IRenderer.getRenderer().mainTabs) {
+                IRenderer.getRenderer().renderTab(s, IRenderer.getRenderer().mainTabs)
             } else {
                 console.log("Unknown Tag!")
             }
@@ -305,12 +307,12 @@ external val document: Document
             s = parseString(s.toString())
             if (s.toLowerCase() == "true") {
                 persistentStorage(true)
-                Renderer.renderButton(document.getElementById("sv") as HTMLButtonElement, true)
+                IRenderer.getRenderer().renderButton(document.getElementById("sv") as HTMLButtonElement, true)
             }
 
             if (s.toLowerCase() == "false") {
                 persistentStorage(false)
-                Renderer.renderButton(document.getElementById("sv") as HTMLButtonElement, false)
+                IRenderer.getRenderer().renderButton(document.getElementById("sv") as HTMLButtonElement, false)
             }
         }
 
@@ -372,16 +374,16 @@ external val document: Document
     }
 
     @JsName("openGenericMainTab") fun openGenericMainTab(name: String) {
-        Renderer.renderTab(name, Renderer.mainTabs)
+        IRenderer.getRenderer().renderTab(name, IRenderer.getRenderer().mainTabs)
         if (name == "editor") {
-            Renderer.renderAssembleButtons()
+            IRenderer.getRenderer().renderAssembleButtons()
         }
         LS.set("defaultTab", name)
     }
 
     @JsName("openURLMaker") fun openURLMaker() {
         js("setUpURL();")
-        Renderer.renderURLMaker()
+        IRenderer.getRenderer().renderURLMaker()
     }
 
     /**
@@ -404,7 +406,7 @@ external val document: Document
             Assembler.assemble(text, abspath = absPath)
         }
         if (errors.isNotEmpty()) {
-            Renderer.displayAssemblerError(errors.first())
+            IRenderer.getRenderer().displayAssemblerError(errors.first())
             return null
         }
         return prog
@@ -417,7 +419,7 @@ external val document: Document
             loadSim(linked)
             return true
         } catch (e: AssemblerError) {
-            Renderer.displayAssemblerError(e)
+            IRenderer.getRenderer().displayAssemblerError(e)
             return false
         }
     }
@@ -445,9 +447,9 @@ external val document: Document
         if (sim.exitcode != null) {
             val msg = "Exited with error code ${sim.exitcode}"
             if (sim.exitcode ?: 0 == 0) {
-                Renderer.stdout(msg)
+                IRenderer.getRenderer().stdout(msg)
             } else {
-                Renderer.displayWarning(msg)
+                IRenderer.getRenderer().displayWarning(msg)
             }
         }
     }
@@ -487,7 +489,7 @@ external val document: Document
             runEnd()
         } else {
             try {
-                Renderer.setRunButtonSpinning(true)
+                IRenderer.getRenderer().setRunButtonSpinning(true)
                 timer = setTimeout(Driver::runStart, TIMEOUT_TIME, true)
                 sim.step() // walk past breakpoint
             } catch (e: Throwable) {
@@ -533,18 +535,18 @@ external val document: Document
             }
             mainCache.reset()
             sim.state.setCacheHandler(mainCache)
-            Renderer.loadSimulator(sim)
+            IRenderer.getRenderer().loadSimulator(sim)
             setCacheSettings()
-            Renderer.updateCache(Address(0, MemSize.WORD))
+            IRenderer.getRenderer().updateCache(Address(0, MemSize.WORD))
         } catch (e: Throwable) {
-            Renderer.loadSimulator(Simulator(LinkedProgram(), VFS))
+            IRenderer.getRenderer().loadSimulator(Simulator(LinkedProgram(), VFS))
             handleError("Reset Simulator", e)
         }
     }
 
     @JsName("toggleBreakpoint") fun addBreakpoint(idx: Int) {
         val isBreakpoint = sim.toggleBreakpointAt(idx)
-        Renderer.renderBreakpointAt(idx, isBreakpoint)
+        IRenderer.getRenderer().renderBreakpointAt(idx, isBreakpoint)
     }
 
     internal const val TIMEOUT_CYCLES = 100
@@ -556,13 +558,13 @@ external val document: Document
                 if (sim.isDone() || (sim.atBreakpoint() && useBreakPoints)) {
                     exitcodecheck()
                     runEnd()
-                    Renderer.updateAll()
+                    IRenderer.getRenderer().updateAll()
                     return
                 }
 
                 handleNotExitOver()
                 sim.step()
-                Renderer.updateCache(Address(0, MemSize.WORD))
+                IRenderer.getRenderer().updateCache(Address(0, MemSize.WORD))
                 cycles++
             }
 
@@ -576,9 +578,9 @@ external val document: Document
     @JsName("runEnd") fun runEnd() {
         handleNotExitOver()
         sim.finishPlugins()
-        Renderer.updatePC(sim.getPC())
-        Renderer.updateAll()
-        Renderer.setRunButtonSpinning(false)
+        IRenderer.getRenderer().updatePC(sim.getPC())
+        IRenderer.getRenderer().updateAll()
+        IRenderer.getRenderer().setRunButtonSpinning(false)
         timer?.let(::clearTimeout)
         timer = null
     }
@@ -589,6 +591,9 @@ external val document: Document
     @JsName("step") fun step() {
         try {
             val diffs = sim.step()
+            IRenderer.getRenderer().updateFromDiffs(diffs)
+            IRenderer.getRenderer().updateCache(Address(0, MemSize.WORD))
+            IRenderer.getRenderer().updateControlButtons()
             handleNotExitOver()
             exitcodecheck()
         } catch (e: Throwable) {
@@ -626,11 +631,11 @@ external val document: Document
             var progLine = ""
             try {
                 mcode = sim.getNextInstruction()
-                Renderer.addToProgramListing(pcloc, mcode, Instruction[mcode].disasm(mcode))
+                IRenderer.getRenderer().addToProgramListing(pcloc, mcode, Instruction[mcode].disasm(mcode))
             } catch (e: SimulatorError) {
                 val short0 = sim.loadHalfWord(sim.getPC())
                 val short1 = sim.loadHalfWord(sim.getPC() + 2)
-                Renderer.addToProgramListing(pcloc, MachineCode((short1 shl 16) or short0), "Invalid Instruction", true)
+                IRenderer.getRenderer().addToProgramListing(pcloc, MachineCode((short1 shl 16) or short0), "Invalid Instruction", true)
             }
         }
     }
@@ -641,8 +646,8 @@ external val document: Document
     @JsName("undo") fun undo() {
         try {
             val diffs = sim.undo()
-            Renderer.updateFromDiffs(diffs)
-            Renderer.updateControlButtons()
+            IRenderer.getRenderer().updateFromDiffs(diffs)
+            IRenderer.getRenderer().updateControlButtons()
         } catch (e: Throwable) {
             handleError("undo", e, e is AlignmentError || e is StoreError || e is ExceededAllowedCyclesError)
         }
@@ -652,49 +657,49 @@ external val document: Document
      * Change to memory tab.
      */
     @JsName("openMemoryTab") fun openMemoryTab() {
-        Renderer.renderMemoryTab()
+        IRenderer.getRenderer().renderMemoryTab()
     }
 
     /**
      * Change to register tab.
      */
     @JsName("openRegisterTab") fun openRegisterTab() {
-        Renderer.renderRegisterTab()
+        IRenderer.getRenderer().renderRegisterTab()
     }
 
     @JsName("openRegsTab") fun openRegsTab() {
-        Renderer.renderRegsTab()
+        IRenderer.getRenderer().renderRegsTab()
     }
 
     @JsName("openFRegsTab") fun openFRegsTab() {
-        Renderer.renderFRegsTab()
+        IRenderer.getRenderer().renderFRegsTab()
     }
 
     /**
      * Change to trace settings tab
      */
     @JsName("openTracerSettingsTab") fun openTracerSettingsTab() {
-        Renderer.renderTracerSettingsTab()
+        IRenderer.getRenderer().renderTracerSettingsTab()
     }
 
     @JsName("openCallingConventionSettingsTab") fun openCallingConventionSettingsTab() {
-        Renderer.renderCallingConventionSettingsTab()
+        IRenderer.getRenderer().renderCallingConventionSettingsTab()
     }
 
     @JsName("openPackagesTab") fun openPackagesTab() {
-        Renderer.renderPackagesTab()
+        IRenderer.getRenderer().renderPackagesTab()
     }
 
     @JsName("openCacheTab") fun openCacheTab() {
-        Renderer.renderCacheTab()
+        IRenderer.getRenderer().renderCacheTab()
     }
 
     @JsName("openSettingsTab") fun openSettingsTab() {
-        Renderer.renderSettingsTab()
+        IRenderer.getRenderer().renderSettingsTab()
     }
 
     @JsName("openGeneralSettingsTab") fun openGeneralSettingsTab() {
-        Renderer.renderGeneralSettingsTab()
+        IRenderer.getRenderer().renderGeneralSettingsTab()
     }
 
     @JsName("currentlyRunning") fun currentlyRunning(): Boolean = timer != null
@@ -707,7 +712,7 @@ external val document: Document
 
     @JsName("openVenusTab") fun openVenusTab(tabid: String) {
         val tabs = listOf("venus-terminal", "venus-files", "venus-url", "venus-jvm")
-        Renderer.renderTab(tabid, tabs)
+        IRenderer.getRenderer().renderTab(tabid, tabs)
         if (tabid == "venus-files") {
             refreshVFS()
         }
@@ -734,7 +739,7 @@ external val document: Document
                 /* do nothing */
             }
         }
-        Renderer.updateRegister(id, sim.getReg(id))
+        IRenderer.getRenderer().updateRegister(id, sim.getReg(id))
     }
 
     @JsName("saveFRegister") fun saveFRegister(freg: HTMLInputElement, id: Int) {
@@ -747,23 +752,23 @@ external val document: Document
                 /* do nothing */
             }
         }
-        Renderer.updateFRegister(id, sim.getFReg(id))
+        IRenderer.getRenderer().updateFRegister(id, sim.getFReg(id))
     }
 
     @JsName("updateRegMemDisplay") fun updateRegMemDisplay() {
-        Renderer.updateRegMemDisplay()
+        IRenderer.getRenderer().updateRegMemDisplay()
     }
 
-    @JsName("moveMemoryJump") fun moveMemoryJump() = Renderer.moveMemoryJump()
+    @JsName("moveMemoryJump") fun moveMemoryJump() = IRenderer.getRenderer().moveMemoryJump()
 
-    @JsName("moveMemoryUp") fun moveMemoryUp() = Renderer.moveMemoryUp()
+    @JsName("moveMemoryUp") fun moveMemoryUp() = IRenderer.getRenderer().moveMemoryUp()
 
-    @JsName("moveMemoryDown") fun moveMemoryDown() = Renderer.moveMemoryDown()
+    @JsName("moveMemoryDown") fun moveMemoryDown() = IRenderer.getRenderer().moveMemoryDown()
 
     @JsName("moveMemoryLocation") fun moveMemoryLocation(address: String) {
         try {
             val addr = userStringToInt(address)
-            Renderer.updateMemory(addr)
+            IRenderer.getRenderer().updateMemory(addr)
         } catch (e: Throwable) {
             handleError("MoveMemLoc", e, true)
         }
@@ -773,7 +778,7 @@ external val document: Document
         val sb = StringBuilder()
         for (i in 0 until sim.linkedProgram.prog.insts.size) {
             val mcode = sim.linkedProgram.prog.insts[i]
-            val hexRepresentation = Renderer.toHex(mcode[InstructionField.ENTIRE].toInt())
+            val hexRepresentation = IRenderer.getRenderer().toHex(mcode[InstructionField.ENTIRE].toInt())
             sb.append(hexRepresentation/*.removePrefix("0x")*/)
             sb.append("\n")
         }
@@ -788,8 +793,8 @@ external val document: Document
     @JsName("dump") fun dump() {
         /*
         try {
-            Renderer.clearConsole()
-            Renderer.printConsole(getInstructionDump())
+            IRenderer.getRenderer().clearConsole()
+            IRenderer.getRenderer().printConsole(getInstructionDump())
             val ta = document.getElementById("console-output") as HTMLTextAreaElement
             ta.select()
             val success = document.execCommand("copy")
@@ -836,7 +841,7 @@ external val document: Document
             } else {
                 console.warn("Could not change text because the program is currently running!")
             }
-            val ts = Renderer.intToString(MemorySegments.TEXT_BEGIN)
+            val ts = IRenderer.getRenderer().intToString(MemorySegments.TEXT_BEGIN)
             input.value = ts
         } catch (e: Throwable) {
             handleError("Verify Text", e)
@@ -873,7 +878,7 @@ external val document: Document
                 val newCache = CacheHandler(cacheLevels.size + 1)
                 cacheLevels[cacheLevels.size - 1].nextLevelCacheHandler = newCache
                 cacheLevels.add(newCache)
-                Renderer.renderAddCacheLevel()
+                IRenderer.getRenderer().renderAddCacheLevel()
             }
             lastCache.update()
         } else if (cacheLevels.size > i) {
@@ -885,9 +890,9 @@ external val document: Document
                 lastCache.nextLevelCacheHandler = null
                 if (cache.cacheLevel == prevCache.cacheLevel) {
                     cache = lastCache
-                    Renderer.renderSetCacheLevel(cache.cacheLevel)
+                    IRenderer.getRenderer().renderSetCacheLevel(cache.cacheLevel)
                 }
-                Renderer.renderRemoveCacheLevel()
+                IRenderer.getRenderer().renderRemoveCacheLevel()
             }
             setCacheSettings()
         }
@@ -895,7 +900,7 @@ external val document: Document
 
     @JsName("setCacheEnabled") fun setCacheEnabled(enabled: Boolean) {
         cache.attach(enabled)
-        Renderer.updateCache(Address(0, MemSize.WORD))
+        IRenderer.getRenderer().updateCache(Address(0, MemSize.WORD))
     }
 
     @JsName("updateCacheLevel") fun updateCacheLevel(e: HTMLSelectElement) {
@@ -910,7 +915,7 @@ external val document: Document
     fun updateCacheLvl(level: Int) {
         if (level in 1..cacheLevels.size) {
             cache = cacheLevels[level - 1]
-            Renderer.renderSetCacheLevel(level)
+            IRenderer.getRenderer().renderSetCacheLevel(level)
             setCacheSettings()
         } else {
             handleError("Update Cache Level (LVL)", CacheError("Cache level '" + level + "' does not exist in your current cache!"), true)
@@ -922,8 +927,8 @@ external val document: Document
         try {
             cache.setCacheBlockSize(v)
         } catch (er: CacheError) {
-            Renderer.clearConsole()
-            Renderer.printConsole(er.toString())
+            IRenderer.getRenderer().clearConsole()
+            IRenderer.getRenderer().printConsole(er.toString())
         }
         e.value = cache.cacheBlockSize().toString()
         setCacheSettings()
@@ -934,8 +939,8 @@ external val document: Document
         try {
             cache.setNumberOfBlocks(v)
         } catch (er: CacheError) {
-            Renderer.clearConsole()
-            Renderer.printConsole(er.toString())
+            IRenderer.getRenderer().clearConsole()
+            IRenderer.getRenderer().printConsole(er.toString())
         }
         e.value = cache.numberOfBlocks().toString()
         setCacheSettings()
@@ -946,8 +951,8 @@ external val document: Document
         try {
             cache.setAssociativity(v)
         } catch (er: CacheError) {
-            Renderer.clearConsole()
-            Renderer.printConsole(er.toString())
+            IRenderer.getRenderer().clearConsole()
+            IRenderer.getRenderer().printConsole(er.toString())
         }
         e.value = cache.associativity().toString()
         setCacheSettings()
@@ -1006,8 +1011,8 @@ external val document: Document
         } else {
             attachedButton.removeClass("is-primary")
         }
-        Renderer.makeCacheBlocks()
-        Renderer.updateCache(Address(0, MemSize.WORD))
+        IRenderer.getRenderer().makeCacheBlocks()
+        IRenderer.getRenderer().updateCache(Address(0, MemSize.WORD))
     }
 
     @JsName("setAlignedAddressing") fun setAlignedAddressing(b: Boolean) {
@@ -1049,16 +1054,16 @@ external val document: Document
 
     @JsName("trace") fun trace() {
         if (trTimer != null) {
-            Renderer.setNameButtonSpinning("simulator-trace", false)
+            IRenderer.getRenderer().setNameButtonSpinning("simulator-trace", false)
             trTimer?.let(::clearTimeout)
             trTimer = null
             tr.traceFullReset()
             sim.reset()
-            Renderer.updateControlButtons()
+            IRenderer.getRenderer().updateControlButtons()
             return
         }
-        Renderer.setNameButtonSpinning("simulator-trace", true)
-        Renderer.clearConsole()
+        IRenderer.getRenderer().setNameButtonSpinning("simulator-trace", true)
+        IRenderer.getRenderer().clearConsole()
         loadTraceSettings()
         trTimer = setTimeout(Driver::traceSt, TIMEOUT_TIME)
     }
@@ -1080,7 +1085,7 @@ external val document: Document
             traceLoop()
         } catch (e: Throwable) {
             handleError("Trace tr Start", e, e is AlignmentError || e is StoreError || e is ExceededAllowedCyclesError)
-            Renderer.setNameButtonSpinning("simulator-trace", false)
+            IRenderer.getRenderer().setNameButtonSpinning("simulator-trace", false)
             trTimer?.let(::clearTimeout)
             trTimer = null
         }
@@ -1105,7 +1110,7 @@ external val document: Document
             trTimer = setTimeout(Driver::traceLoop, TIMEOUT_TIME)
         } catch (e: Throwable) {
             handleError("Trace tr Loop", e, e is AlignmentError || e is StoreError || e is ExceededAllowedCyclesError)
-            Renderer.setNameButtonSpinning("simulator-trace", false)
+            IRenderer.getRenderer().setNameButtonSpinning("simulator-trace", false)
             trTimer?.let(::clearTimeout)
             trTimer = null
         }
@@ -1120,7 +1125,7 @@ external val document: Document
             trTimer = setTimeout(Driver::traceStringLoop, TIMEOUT_TIME)
         } catch (e: Throwable) {
             handleError("Trace Tr End", e, e is AlignmentError || e is StoreError || e is ExceededAllowedCyclesError)
-            Renderer.setNameButtonSpinning("simulator-trace", false)
+            IRenderer.getRenderer().setNameButtonSpinning("simulator-trace", false)
             trTimer?.let(::clearTimeout)
             trTimer = null
         }
@@ -1138,7 +1143,7 @@ external val document: Document
             trTimer = setTimeout(Driver::traceStringLoop, TIMEOUT_TIME)
         } catch (e: Throwable) {
             handleError("Trace String Loop", e, e is AlignmentError || e is StoreError || e is ExceededAllowedCyclesError)
-            Renderer.setNameButtonSpinning("simulator-trace", false)
+            IRenderer.getRenderer().setNameButtonSpinning("simulator-trace", false)
             trTimer?.let(::clearTimeout)
             trTimer = null
         }
@@ -1147,20 +1152,20 @@ external val document: Document
     internal fun traceStringEnd() {
         try {
             tr.traceStringEnd()
-            Renderer.clearConsole()
-            Renderer.printConsole(tr.getString())
+            IRenderer.getRenderer().clearConsole()
+            IRenderer.getRenderer().printConsole(tr.getString())
         } catch (e: Throwable) {
             handleError("Trace String End", e, e is AlignmentError || e is StoreError || e is ExceededAllowedCyclesError)
         }
-        Renderer.setNameButtonSpinning("simulator-trace", false)
+        IRenderer.getRenderer().setNameButtonSpinning("simulator-trace", false)
         trTimer?.let(::clearTimeout)
         trTimer = null
     }
 
     /*@JsName("trace") fun trace() {
         //@todo make it so trace is better
-        Renderer.setNameButtonSpinning("simulator-trace", true)
-        Renderer.clearConsole()
+        IRenderer.getRenderer().setNameButtonSpinning("simulator-trace", true)
+        IRenderer.getRenderer().clearConsole()
         this.loadTraceSettings()
         setTimeout(Driver::traceStart, TIMEOUT_TIME)
     }*/
@@ -1170,18 +1175,18 @@ external val document: Document
             setTimeout(Driver::traceString, TIMEOUT_TIME)
         } catch (e: Throwable) {
             handleError("Trace Start", e, e is AlignmentError || e is StoreError || e is ExceededAllowedCyclesError)
-            Renderer.setNameButtonSpinning("simulator-trace", false)
+            IRenderer.getRenderer().setNameButtonSpinning("simulator-trace", false)
         }
     }
     internal fun traceString() {
         try {
             tr.traceString()
-            Renderer.clearConsole()
-            Renderer.printConsole(tr.getString())
+            IRenderer.getRenderer().clearConsole()
+            IRenderer.getRenderer().printConsole(tr.getString())
         } catch (e: Throwable) {
             handleError("Trace to String", e)
         }
-        Renderer.setNameButtonSpinning("simulator-trace", false)
+        IRenderer.getRenderer().setNameButtonSpinning("simulator-trace", false)
     }
 
     @JsName("persistentStorage") fun persistentStorage(b: Boolean) {
@@ -1310,7 +1315,7 @@ external val document: Document
         /* History Limit */
         var hlim = this.simSettings.max_histroy.toString()
         /*Text begin*/
-        var txtStart = Renderer.intToString(MemorySegments.TEXT_BEGIN)
+        var txtStart = IRenderer.getRenderer().intToString(MemorySegments.TEXT_BEGIN)
         /*Other Settings*/
         var am = simSettings.alignedAddress.toString()
         var mt = simSettings.mutableText.toString()
@@ -1413,11 +1418,11 @@ external val document: Document
         (document.getElementById("tmaxsteps-val") as HTMLInputElement).value = ms
         tr.maxSteps = ms.toInt()
         simSettings.maxSteps = ms.toInt()
-        Renderer.renderButton(document.getElementById("tinst-first") as HTMLButtonElement, instf == "true")
+        IRenderer.getRenderer().renderButton(document.getElementById("tinst-first") as HTMLButtonElement, instf == "true")
         tr.instFirst = instf == "true"
-        Renderer.renderButton(document.getElementById("tPCWAddr") as HTMLButtonElement, wa == "true")
+        IRenderer.getRenderer().renderButton(document.getElementById("tPCWAddr") as HTMLButtonElement, wa == "true")
         wordAddressed = wa == "true"
-        Renderer.renderButton(document.getElementById("tTwoStage") as HTMLButtonElement, tws == "true")
+        IRenderer.getRenderer().renderButton(document.getElementById("tTwoStage") as HTMLButtonElement, tws == "true")
         tr.twoStage = tws == "true"
 
         /* History Limit */
@@ -1431,16 +1436,16 @@ external val document: Document
         verifyText(ts)
 
         /*Other Settings*/
-        Renderer.renderButton(document.getElementById("alignAddr") as HTMLButtonElement, am == "true")
+        IRenderer.getRenderer().renderButton(document.getElementById("alignAddr") as HTMLButtonElement, am == "true")
         simSettings.alignedAddress = am == "true"
-        Renderer.renderButton(document.getElementById("mutableText") as HTMLButtonElement, mt == "true")
+        IRenderer.getRenderer().renderButton(document.getElementById("mutableText") as HTMLButtonElement, mt == "true")
         simSettings.mutableText = mt == "true"
-        Renderer.renderButton(document.getElementById("ecallExit") as HTMLButtonElement, eeo == "true")
+        IRenderer.getRenderer().renderButton(document.getElementById("ecallExit") as HTMLButtonElement, eeo == "true")
         simSettings.ecallOnlyExit = eeo == "true"
-        Renderer.renderButton(document.getElementById("setRegsOnInit") as HTMLButtonElement, sroi == "true")
+        IRenderer.getRenderer().renderButton(document.getElementById("setRegsOnInit") as HTMLButtonElement, sroi == "true")
         simSettings.setRegesOnInit = sroi == "true"
         (document.getElementById("ArgsList") as HTMLInputElement).value = simargs
-        Renderer.renderButton(document.getElementById("enableCallingConvention") as HTMLButtonElement, docc == "true")
+        IRenderer.getRenderer().renderButton(document.getElementById("enableCallingConvention") as HTMLButtonElement, docc == "true")
         enableCallingConvention(docc == "true")
 
         /*Program*/
@@ -1492,20 +1497,20 @@ external val document: Document
     }
 
     fun openVFObjectfromObj(obj: VFSObject) {
-        Renderer.clearObjectsFromDisplay()
-        Renderer.addFilePWD(obj)
+        IRenderer.getRenderer().clearObjectsFromDisplay()
+        IRenderer.getRenderer().addFilePWD(obj)
 //        for ((key, value) in fileExplorerCurrentLocation.contents) {
 //            if (key in listOf(".", "..")) {
-//                Renderer.addObjectToDisplay(value as VFSObject, key)
+//                IRenderer.getRenderer().addObjectToDisplay(value as VFSObject, key)
 //            } else {
-//                Renderer.addObjectToDisplay(value as VFSObject)
+//                IRenderer.getRenderer().addObjectToDisplay(value as VFSObject)
 //            }
 //        }
         for (key in fileExplorerCurrentLocation.childrenNames()) {
             if (key in listOf(".", "..")) {
-                Renderer.addObjectToDisplay(fileExplorerCurrentLocation.getChild(key) as VFSObject, key)
+                IRenderer.getRenderer().addObjectToDisplay(fileExplorerCurrentLocation.getChild(key) as VFSObject, key)
             } else {
-                Renderer.addObjectToDisplay(fileExplorerCurrentLocation.getChild(key) as VFSObject)
+                IRenderer.getRenderer().addObjectToDisplay(fileExplorerCurrentLocation.getChild(key) as VFSObject)
             }
         }
     }

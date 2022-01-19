@@ -14,7 +14,6 @@ import venusbackend.simulator.SimulatorError
 import venusbackend.simulator.cache.BlockState
 import venusbackend.simulator.cache.ChangedBlockState
 import venusbackend.simulator.diffs.*
-import kotlin.browser.document
 import kotlin.browser.window
 import kotlin.dom.addClass
 import kotlin.dom.removeClass
@@ -27,19 +26,20 @@ import kotlin.dom.removeClass
  *
  * @todo break this up into multiple objects
  */
-internal object RendererOriginal {
-    /** The register currently being highlighted */
-    private var activeRegister: HTMLElement? = null
-    /** The instruction currently being highlighted */
-    private var activeInstruction: HTMLElement? = null
-    /** The memory location currently centered */
-    var activeMemoryAddress: Int = 0
-    /** The simulator being rendered */
-    private var sim: Simulator = Simulator(LinkedProgram(), VirtualFileSystem("dummy"))
-    /* The way the information in the registers is displayed*/
-    private var displayType = "hex"
+@JsName("WebFrontendRenderer") object WebFrontendRenderer : IRenderer {
 
-    @JsName("renderTab") fun renderTab(tab: String, tabs: List<String>) {
+    override val hexMap = listOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            'A', 'B', 'C', 'D', 'E', 'F')
+    override var activeRegister: HTMLElement? = null
+    override var activeInstruction: HTMLElement? = null
+    override var activeMemoryAddress: Int = 0
+    override var sim: Simulator = Simulator(LinkedProgram(), VirtualFileSystem("dummy"))
+    override var displayType = "hex"
+    override var mainTabs: ArrayList<String> = arrayListOf("simulator", "editor", "venus")
+    override val MEMORY_CONTEXT = 6
+
+
+    override fun renderTab(tab: String, tabs: List<String>) {
         if (!tabs.contains(tab)) {
             return
         }
@@ -52,7 +52,7 @@ internal object RendererOriginal {
         }
     }
 
-    @JsName("addTab") fun addTab(tabName: String, tabList: ArrayList<String>): Boolean {
+    override fun addTab(tabName: String, tabList: ArrayList<String>): Boolean {
         if (!tabList.contains(tabName)) {
             tabList.add(tabName)
             return true
@@ -60,7 +60,7 @@ internal object RendererOriginal {
         return false
     }
 
-    @JsName("removeTab") fun removeTab(tabName: String, tabList: ArrayList<String>): Boolean {
+    override fun removeTab(tabName: String, tabList: ArrayList<String>): Boolean {
         if (tabList.contains(tabName)) {
             tabList.remove(tabName)
             return true
@@ -68,33 +68,23 @@ internal object RendererOriginal {
         return false
     }
 
-    var mainTabs: ArrayList<String> = arrayListOf("simulator", "editor", "venus")
     /**
      * Shows the simulator tab and hides other tabs
      *
      * @param displaySim the simulator to show
      */
-    fun renderSimulator() {
+    override fun renderSimulator() {
         renderTab("simulator", mainTabs)
     }
 
-    fun loadSimulator(displaySim: Simulator) {
-        sim = displaySim
-        setRunButtonSpinning(false)
-        renderProgramListing()
-        clearConsole()
-        updateAll()
-        renderSimButtons()
-    }
-
-    fun renderSimButtons() {
+    override fun renderSimButtons() {
         val simbtns = document.getElementById("simulator-buttons") as HTMLDivElement
         val simassmbbtns = document.getElementById("simulator-assemble-buttons") as HTMLDivElement
         simassmbbtns.style.display = "none"
         simbtns.style.display = ""
     }
 
-    fun renderAssembleButtons() {
+    override fun renderAssembleButtons() {
         val simbtns = document.getElementById("simulator-buttons") as HTMLDivElement
         val simassmbbtns = document.getElementById("simulator-assemble-buttons") as HTMLDivElement
         simassmbbtns.style.display = ""
@@ -102,16 +92,16 @@ internal object RendererOriginal {
     }
 
     /** Shows the editor tab and hides other tabs */
-    fun renderEditor() {
+    override fun renderEditor() {
         renderTab("editor", mainTabs)
         renderAssembleButtons()
     }
 
-    fun renderVenus() {
+    override fun renderVenus() {
         renderTab("venus", mainTabs)
     }
 
-    fun renderURLMaker() {
+    override fun renderURLMaker() {
         renderTab("urlmaker", mainTabs)
     }
 
@@ -122,7 +112,7 @@ internal object RendererOriginal {
      *
      * @param tab the name of the tab (currently "editor" or "simulator")
      */
-    @JsName("tabSetVisibility") private fun tabSetVisibility(tab: String, display: String) {
+    override fun tabSetVisibility(tab: String, display: String) {
         val tabView = document.getElementById("$tab-tab-view") as HTMLElement
         val tabDisplay = document.getElementById("$tab-tab") as HTMLElement
         tabView.style.display = display
@@ -133,38 +123,29 @@ internal object RendererOriginal {
         }
     }
 
-    fun displayWarning(w: String) {
+    override fun displayWarning(w: String) {
         printConsole(w)
     }
 
     /** Display a given ERROR */
-    fun displayError(thing: Any) {
+    override fun displayError(thing: Any) {
         printConsole("\n------STDERR------\n")
         printConsole(thing)
         printConsole("\n----STDERR_END----\n")
     }
 
-    fun stdout(thing: Any) {
+    override fun stdout(thing: Any) {
         printConsole(thing)
     }
 
-    fun stderr(thing: Any) {
+    override fun stderr(thing: Any) {
         displayError(thing)
-    }
-
-    /** Display a given [AssemblerError] */
-    @Suppress("UNUSED_PARAMETER") fun displayAssemblerError(e: AssemblerError) {
-//        if (e.line !== null) {
-//            js("alert('[ERROR]\\n(Line: ' + e.line + ') ' + e.message)")
-//        } else {
-            js("alert('[ERROR]\\n' + e.message)")
-//        }
     }
 
     /**
      * Renders the program listing under the debugger
      */
-    private fun renderProgramListing() {
+    override fun renderProgramListing() {
         clearProgramListing()
         for (i in 0 until sim.linkedProgram.prog.insts.size) {
             val programDebug = sim.linkedProgram.dbg[i]
@@ -181,7 +162,7 @@ internal object RendererOriginal {
      *
      * @todo refactor this into a "reset" and "update" all function
      */
-    fun updateAll() {
+    override fun updateAll() {
         updateText()
         updatePC(sim.getPC())
         updateMemory(activeMemoryAddress)
@@ -199,7 +180,7 @@ internal object RendererOriginal {
      *
      * @param diffs the list of diffs to apply
      */
-    fun updateFromDiffs(diffs: List<Diff>) {
+    override fun updateFromDiffs(diffs: List<Diff>) {
         for (diff in diffs) {
             when (diff) {
                 is RegisterDiff -> updateRegister(diff.id, diff.v, true)
@@ -220,7 +201,7 @@ internal object RendererOriginal {
      *
      * @todo find a less hacky way to do this?
      */
-    fun clearProgramListing() {
+    override fun clearProgramListing() {
         getElement("program-listing-body").innerHTML = ""
     }
 
@@ -231,7 +212,7 @@ internal object RendererOriginal {
      * @param mcode the machine code representation of the instruction
      * @param progLine the original assembly code
      */
-    fun addToProgramListing(pcx: Int, mcode: MachineCode, progLine: String, invalidInst: Boolean = false) {
+    override fun addToProgramListing(pcx: Int, mcode: MachineCode, progLine: String, invalidInst: Boolean) {
         val programTable = getElement("program-listing-body") as HTMLTableSectionElement
 
         val newRow = programTable.insertRow() as HTMLTableRowElement
@@ -256,7 +237,7 @@ internal object RendererOriginal {
         line.appendChild(lineText)
     }
 
-    fun updateProgramListing(idx: Number, inst: Int, orig: String? = null): InstructionDiff {
+    override fun updateProgramListing(idx: Number, inst: Int, orig: String?): InstructionDiff {
         val instTab = document.getElementById("instruction-$idx")
         val children = instTab?.children
         val mcode = MachineCode(inst)
@@ -279,7 +260,7 @@ internal object RendererOriginal {
      * @returns the HTML element corresponding to the given ID
      * @throws ClassCastException if the element is not an [HTMLElement] or does not exist
      */
-    fun getElement(id: String): HTMLElement = document.getElementById(id) as HTMLElement
+    override fun getElement(id: String): HTMLElement = document.getElementById(id) as HTMLElement
 
     /**
      * Updates the register with the given id and value.
@@ -288,7 +269,7 @@ internal object RendererOriginal {
      * @param value the new value of the register
      * @param setActive whether the register should be set to the active register (i.e., highlighted for the user)
      */
-    fun updateRegister(id: Int, value: Number, setActive: Boolean = false) {
+    override fun updateRegister(id: Int, value: Number, setActive: Boolean) {
         val register = getElement("reg-$id-val") as HTMLInputElement
         register.value = when (displayType) {
             "Hex" -> toHex(value.toInt())
@@ -310,7 +291,7 @@ internal object RendererOriginal {
      * @param value the new value of the register
      * @param setActive whether the register should be set to the active register (i.e., highlighted for the user)
      */
-    fun updateFRegister(id: Int, v: Decimal, setActive: Boolean = false) {
+    override fun updateFRegister(id: Int, v: Decimal, setActive: Boolean) {
         val fregister = getElement("freg-$id-val") as HTMLInputElement
         fregister.value = when (displayType) {
             "Hex" -> v.toHex()
@@ -326,18 +307,8 @@ internal object RendererOriginal {
         }
     }
 
-    fun intToString(value: Int): String {
-        var v = when (displayType) {
-            "Hex" -> toHex(value)
-            "Decimal" -> value.toString()
-            "Unsigned" -> toUnsigned(value)
-            "ASCII" -> toAscii(value)
-            else -> toHex(value)
-        }
-        return v
-    }
     /*@TODO make it so I can detect between if I am continuing or not so I do not have to be too wasteful.*/
-    fun updateCache(a: Address) {
+    override fun updateCache(a: Address) {
         // println("Need to implement the update cHandler feature!")
         (document.getElementById("hit-count") as HTMLInputElement).value = Driver.cache.getHitCount().toString()
         val hr = Driver.cache.getHitRate()
@@ -352,12 +323,12 @@ internal object RendererOriginal {
         }
     }
 
-    fun renderSetCacheLevel(i: Int) {
+    override fun renderSetCacheLevel(i: Int) {
         val clvl = document.getElementById("cacheLevel") as HTMLSelectElement
         clvl.value = "L" + i.toString()
     }
 
-    fun renderAddCacheLevel() {
+    override fun renderAddCacheLevel() {
         val clvl = document.getElementById("cacheLevel") as HTMLSelectElement
         val newCacheNumber = clvl.options.length + 1
         val option = document.createElement("option") as HTMLOptionElement
@@ -365,12 +336,12 @@ internal object RendererOriginal {
         clvl.options[clvl.options.length] = option
     }
 
-    fun renderRemoveCacheLevel() {
+    override fun renderRemoveCacheLevel() {
         val clvl = document.getElementById("cacheLevel") as HTMLSelectElement
         clvl.options[clvl.options.length - 1] = null
     }
 
-    fun makeCacheBlocks() {
+    override fun makeCacheBlocks() {
         val t = document.createElement("table")
         t.setAttribute("style", "border-collapse: collapse;border: 1px solid black;width:100%;")
         val bs = Driver.cache.getBlocksState()
@@ -393,7 +364,7 @@ internal object RendererOriginal {
         cb.appendChild(t)
     }
 
-    fun updateCacheBlocks(b: ChangedBlockState = Driver.cache.currentState().getChangedBlockState()) {
+    override fun updateCacheBlocks(b: ChangedBlockState) {
         if (!b.noChange) {
             val pb = Driver.cache.currentState().getPrevChangedBlock()
             if (pb != -1) {
@@ -415,7 +386,7 @@ internal object RendererOriginal {
         }
     }
 
-    fun updateAllCacheBlocks() {
+    override fun updateAllCacheBlocks() {
         val bs = Driver.cache.currentState().getBlocksState()
         for (i in bs.indices) {
             val elm = document.getElementById("cache-block-" + i.toString())
@@ -440,7 +411,7 @@ internal object RendererOriginal {
      * @param pc the new PC
      * @todo abstract away instruction length
      */
-    fun updatePC(pc: Number) {
+    override fun updatePC(pc: Number) {
 //        val idx = (pc.toInt() - MemorySegments.TEXT_BEGIN) / 4
 //        val idx = sim.invInstOrderMapping[pc.toInt()]
         val idx = pc.toInt()
@@ -456,7 +427,7 @@ internal object RendererOriginal {
      *
      * @param thing the thing to print
      */
-    internal fun printConsole(thing: Any) {
+    override fun printConsole(thing: Any) {
         val console = getElement("console-output") as HTMLTextAreaElement
         console.value += thing.toString()
     }
@@ -464,7 +435,7 @@ internal object RendererOriginal {
     /**
      * Clears the console
      */
-    fun clearConsole() {
+    override fun clearConsole() {
         val console = getElement("console-output") as HTMLTextAreaElement
         console.value = ""
     }
@@ -474,7 +445,7 @@ internal object RendererOriginal {
      *
      * @param spinning whether the button should be spin
      */
-    fun setRunButtonSpinning(spinning: Boolean) {
+    override fun setRunButtonSpinning(spinning: Boolean) {
         val runButton = getElement("simulator-run")
         if (spinning) {
             runButton.classList.add("is-loading")
@@ -490,7 +461,7 @@ internal object RendererOriginal {
      *
      * @param spinning whether the button should be spin
      */
-    fun setNameButtonSpinning(name: String, spinning: Boolean) {
+    override fun setNameButtonSpinning(name: String, spinning: Boolean) {
         val runButton = getElement(name)
         if (spinning) {
             runButton.classList.add("is-loading")
@@ -506,7 +477,7 @@ internal object RendererOriginal {
      * @param id the id of the button to change
      * @param disabled whether or not to disable the button
      */
-    private fun setButtonDisabled(id: String, disabled: Boolean) {
+    override fun setButtonDisabled(id: String, disabled: Boolean) {
         val button = getElement(id) as HTMLButtonElement
         button.disabled = disabled
     }
@@ -514,7 +485,7 @@ internal object RendererOriginal {
     /**
      * Renders the control buttons to be enabled / disabled appropriately.
      */
-    fun updateControlButtons() {
+    override fun updateControlButtons() {
         setButtonDisabled("simulator-reset", !sim.canUndo())
         setButtonDisabled("simulator-undo", !sim.canUndo())
         setButtonDisabled("simulator-step", sim.isDone())
@@ -527,7 +498,7 @@ internal object RendererOriginal {
      *
      * Used while running, see [Driver.runStart].
      */
-    fun disableControlButtons() {
+    override fun disableControlButtons() {
         setButtonDisabled("simulator-reset", true)
         setButtonDisabled("simulator-undo", true)
         setButtonDisabled("simulator-step", true)
@@ -539,7 +510,7 @@ internal object RendererOriginal {
      * @param idx the index to render
      * @param state whether or not there is a breakpoint
      */
-    fun renderBreakpointAt(idx: Int, state: Boolean) {
+    override fun renderBreakpointAt(idx: Int, state: Boolean) {
         val row = getElement("instruction-$idx")
         if (state) {
             row.classList.add("is-breakpoint")
@@ -548,36 +519,31 @@ internal object RendererOriginal {
         }
     }
 
-    /**
-     * Number of rows to show around the current address
-     */
-    const val MEMORY_CONTEXT = 6
-
     /** Show the memory sidebar tab */
-    fun renderMemoryTab() {
+    override fun renderMemoryTab() {
         tabSetVisibility("memory", "block")
         tabSetVisibility("register", "none")
         tabSetVisibility("cache", "none")
     }
 
     /** Show the register sidebar tab */
-    fun renderRegisterTab() {
+    override fun renderRegisterTab() {
         tabSetVisibility("register", "block")
         tabSetVisibility("memory", "none")
         tabSetVisibility("cache", "none")
     }
 
-    fun renderCacheTab() {
+    override fun renderCacheTab() {
         tabSetVisibility("cache", "block")
         tabSetVisibility("memory", "none")
         tabSetVisibility("register", "none")
     }
 
-    fun renderSettingsTab() {
+    override fun renderSettingsTab() {
         tabSetVisibility("settings", "block")
     }
 
-    fun renderGeneralSettingsTab() {
+    override fun renderGeneralSettingsTab() {
         tabSetVisibility("general-settings", "block")
         tabSetVisibility("tracer-settings", "none")
         tabSetVisibility("packages", "none")
@@ -586,29 +552,29 @@ internal object RendererOriginal {
     /**
      * Show the tracer settings tab
      */
-    fun renderTracerSettingsTab() {
+    override fun renderTracerSettingsTab() {
         tabSetVisibility("general-settings", "none")
         tabSetVisibility("tracer-settings", "block")
         tabSetVisibility("packages", "none")
     }
 
-    fun renderPackagesTab() {
+    override fun renderPackagesTab() {
         tabSetVisibility("general-settings", "none")
         tabSetVisibility("tracer-settings", "none")
         tabSetVisibility("packages", "block")
     }
 
-    fun renderRegsTab() {
+    override fun renderRegsTab() {
         tabSetVisibility("regs", "block")
         tabSetVisibility("fregs", "none")
     }
 
-    fun renderFRegsTab() {
+    override fun renderFRegsTab() {
         tabSetVisibility("regs", "none")
         tabSetVisibility("fregs", "block")
     }
 
-    fun rendererAddPackage(pid: String, enabled: Boolean, removable: Boolean = true) {
+    override fun rendererAddPackage(pid: String, enabled: Boolean, removable: Boolean) {
         val rp = document.createElement("div")
         rp.addClass("panel-block")
         rp.id = "package-$pid"
@@ -640,11 +606,11 @@ internal object RendererOriginal {
         document.getElementById("package-list")?.appendChild(rp)
     }
 
-    fun rendererRemovePackage(pid: String) {
+    override fun rendererRemovePackage(pid: String) {
         document.getElementById("package-$pid")?.remove()
     }
 
-    fun rendererUpdatePackage(pid: String, state: Boolean) {
+    override fun rendererUpdatePackage(pid: String, state: Boolean) {
         val p = document.getElementById("penable-button-$pid")
         if (p != null) {
             if (state) {
@@ -658,17 +624,17 @@ internal object RendererOriginal {
         }
     }
 
-    var pkgmsgTimeout: Int? = null
-    fun pkgMsg(m: String) {
+    override var pkgmsgTimeout: Int? = null
+    override fun pkgMsg(m: String) {
         if (pkgmsgTimeout != null) {
             window.clearTimeout(pkgmsgTimeout ?: -1)
         }
         val d = document.getElementById("package-msgs")
         d?.innerHTML = m
-        pkgmsgTimeout = window.setTimeout(Renderer::clearPkgMsg, 10000)
+        pkgmsgTimeout = window.setTimeout(WebFrontendRenderer::clearPkgMsg, 10000)
     }
 
-    fun clearPkgMsg() {
+    override fun clearPkgMsg() {
         document.getElementById("package-msgs")?.innerHTML = ""
     }
 
@@ -679,7 +645,7 @@ internal object RendererOriginal {
      *
      * @param addr the address to update around
      */
-    fun updateMemory(addr: Int) {
+    override fun updateMemory(addr: Int) {
         val wordAddress = (addr shr 2) shl 2
         if (mustMoveMemoryDisplay(wordAddress)) {
             activeMemoryAddress = wordAddress
@@ -698,7 +664,7 @@ internal object RendererOriginal {
      * @param wordAddress the address we want to show
      * @return true if we need to move the display
      */
-    private fun mustMoveMemoryDisplay(wordAddress: Int) =
+    override fun mustMoveMemoryDisplay(wordAddress: Int) =
             (activeMemoryAddress - wordAddress) shr 2 !in -MEMORY_CONTEXT..MEMORY_CONTEXT
 
     /**
@@ -741,87 +707,18 @@ internal object RendererOriginal {
         return row
     }
 
-    /** a map from integers to the corresponding hex digits */
-    private val hexMap = listOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        'A', 'B', 'C', 'D', 'E', 'F')
-
-    /**
-     * Convert a certain byte to hex
-     *
-     * @param b the byte to convert
-     * @return a hex string for the byte
-     *
-     * @throws IndexOutOfBoundsException if b is not in -127..255
-     */
-    private fun byteToHex(b: Int): String {
-        val leftNibble = hexMap[b ushr 4]
-        val rightNibble = hexMap[b and 15]
-        return "$leftNibble$rightNibble"
-    }
-
-    private fun byteToDec(b: Int): String = b.toByte().toString()
-
-    private fun byteToUnsign(b: Int): String = b.toString()
-
-    /**
-     * Converts a value to a two's complement hex number.
-     *
-     * By two's complement, I mean that -1 becomes 0xFFFFFFFF not -0x1.
-     *
-     * @param value the value to convert
-     * @return the hexadecimal string corresponding to that value
-     * @todo move this?
-     */
-    fun toHex(value: Int, num_nibbles: Int = 8, add_prefix: Boolean = true): String {
-        var remainder = value.toLong()
-        var suffix = ""
-
-        repeat(num_nibbles) {
-            val hexDigit = hexMap[(remainder and 15).toInt()]
-            suffix = hexDigit + suffix
-            remainder = remainder ushr 4
-        }
-
-        if (add_prefix) {
-            suffix = "0x" + suffix
-        }
-
-        return suffix
-    }
-
-    fun toHex(value: Number): String {
-        return toHex(value.toInt())
-    }
-
-    private fun toUnsigned(value: Int): String =
-            if (value >= 0) value.toString() else (value + 0x1_0000_0000L).toString()
-
-    private fun toAscii(value: Int, num_nibbles: Int = 8): String {
-        var s = ""
-//        for (i in 0..3) {
-//            val v = (value shr i * 8) and 0xFF
-            val v = value
-            s += when (v) {
-                !in 0..255 -> toHex(v, num_nibbles = num_nibbles)
-//                !in 32..126 -> "\uFFFD"
-                !in 32..126 -> toHex(v, num_nibbles = num_nibbles)
-                else -> "${v.toChar()}"
-            }
-//        }
-        return s
-    }
 
     /**
      * Sets the display type for all of the registers and memory
      * Rerenders after
      */
-    fun updateRegMemDisplay() {
+    override fun updateRegMemDisplay() {
         val displaySelect = getElement("display-settings") as HTMLSelectElement
         displayType = displaySelect.value
         updateAll()
     }
 
-    fun moveMemoryJump() {
+    override fun moveMemoryJump() {
         val jumpSelect = getElement("address-jump") as HTMLSelectElement
         val where = jumpSelect.value
         activeMemoryAddress = when (where) {
@@ -835,22 +732,22 @@ internal object RendererOriginal {
         jumpSelect.selectedIndex = 0
     }
 
-    private fun moveMemoryBy(rows: Int) {
+    override fun moveMemoryBy(rows: Int) {
         val bytes = 4 * rows
         if (activeMemoryAddress + bytes < 0) return
         activeMemoryAddress += bytes
         updateMemory(activeMemoryAddress)
     }
 
-    fun moveMemoryUp() = moveMemoryBy(MEMORY_CONTEXT)
-    fun moveMemoryDown() = moveMemoryBy(-MEMORY_CONTEXT)
+    override fun moveMemoryUp() = moveMemoryBy(MEMORY_CONTEXT)
+    override fun moveMemoryDown() = moveMemoryBy(-MEMORY_CONTEXT)
 
-    fun updateText() {
+    override fun updateText() {
         var t = (document.getElementById("text-start") as HTMLInputElement)
         t.value = intToString(userStringToInt(t.value))
     }
 
-    fun renderButton(e: HTMLButtonElement, b: Boolean) {
+    override fun renderButton(e: HTMLButtonElement, b: Boolean) {
         if (b) {
             e.classList.add("is-primary")
         } else {
@@ -859,7 +756,7 @@ internal object RendererOriginal {
         e.value = b.toString()
     }
 
-    fun addObjectToDisplay(obj: VFSObject, special: String = "") {
+    override fun addObjectToDisplay(obj: VFSObject, special: String) {
         val b = document.getElementById("files-listing-body")!!
         var elm = document.createElement("tr")
         if (special == "") {
@@ -907,7 +804,7 @@ internal object RendererOriginal {
         b.appendChild(elm)
     }
 
-    fun addFilePWD(obj: VFSObject) {
+    override fun addFilePWD(obj: VFSObject) {
         var b = document.getElementById("files-listing-pwd")!!
         var pwd = ""
         var o = obj
@@ -921,7 +818,7 @@ internal object RendererOriginal {
         b.innerHTML = pwd
     }
 
-    fun clearObjectsFromDisplay() {
+    override fun clearObjectsFromDisplay() {
         var b = document.getElementById("files-listing-body")!!
         b.innerHTML = ""
         b = document.getElementById("files-listing-pwd")!!

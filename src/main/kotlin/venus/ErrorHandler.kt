@@ -14,7 +14,7 @@ internal fun handleError(where: String, error: Throwable, h: Boolean = false) {
         false
     }
     if (!(error is SimulatorError && (error.infe != null))) {
-//        Renderer.clearConsole()
+//        IRenderer.getRenderer().clearConsole()
         console.error(error)
     } else {
         handled = true
@@ -34,18 +34,18 @@ internal fun handleError(where: String, error: Throwable, h: Boolean = false) {
 
         Driver.LS.lsm = oldlsm
         Driver.useLS = olduseLS
-        Renderer.displayError("\n--------------------\n")
+        IRenderer.getRenderer().displayError("\n--------------------\n")
         if (handled) {
-            Renderer.displayError("[ERROR] An error has occurred!\n\n")
+            IRenderer.getRenderer().displayError("[ERROR] An error has occurred!\n\n")
         } else {
-            Renderer.displayError("[ERROR] An uncaught error has occurred! Here are the details that may help solve this issue.\n\n")
+            IRenderer.getRenderer().displayError("[ERROR] An uncaught error has occurred! Here are the details that may help solve this issue.\n\n")
         }
-        Renderer.displayError("Error:\n`" + error.toString())
-        Renderer.displayError("\n\nID:\n'" + where + "'!\n\n")
+        IRenderer.getRenderer().displayError("Error:\n`" + error.toString())
+        IRenderer.getRenderer().displayError("\n\nID:\n'" + where + "'!\n\n")
         if (!handled) {
-            Renderer.displayError("`\n\nData:\n" + t)
+            IRenderer.getRenderer().displayError("`\n\nData:\n" + t)
         }
     } catch (t: Throwable) {
-        Renderer.displayError("An error occurred when trying to handle the error! Please tell me what you did since I do not fully know how you caused this error and could not generate a trace for me to figure that out. All I know is that the error was here: '" + where + "' and was:\n" + error.toString())
+        IRenderer.getRenderer().displayError("An error occurred when trying to handle the error! Please tell me what you did since I do not fully know how you caused this error and could not generate a trace for me to figure that out. All I know is that the error was here: '" + where + "' and was:\n" + error.toString())
     }
 }

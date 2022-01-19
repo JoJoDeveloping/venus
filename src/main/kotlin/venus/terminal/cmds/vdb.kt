@@ -3,7 +3,7 @@ package venus.terminal.cmds
 /* ktlint-disable no-wildcard-imports */
 import venusbackend.assembler.Assembler
 import venus.Driver
-import venus.Renderer
+import venus.IRenderer
 import venus.terminal.Command
 import venus.terminal.Command.Companion.fileTabComplete
 import venus.terminal.Terminal
@@ -103,9 +103,9 @@ var vdb = Command(
             try {
                 Driver.loadSim(lp)
                 Driver.sim.addArg(args)
-                Renderer.loadSimulator(Driver.sim)
+                IRenderer.getRenderer().loadSimulator(Driver.sim)
                 Driver.setCacheSettings()
-                Renderer.updateCache(Address(0, MemSize.WORD))
+                IRenderer.getRenderer().updateCache(Address(0, MemSize.WORD))
                 Driver.openSimulator()
             } catch (e: Throwable) {
                 console.error(e)

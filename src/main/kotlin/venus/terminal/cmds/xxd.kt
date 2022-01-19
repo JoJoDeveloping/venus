@@ -1,6 +1,6 @@
 package venus.terminal.cmds
 
-import venus.Renderer
+import venus.IRenderer
 import venus.terminal.Command
 import venus.terminal.Command.Companion.fileTabComplete
 import venus.terminal.Terminal
@@ -22,19 +22,19 @@ var xxd = Command(
                 var i = 0
                 var curline = ""
                 if (text.length > 0) {
-                    result += Renderer.toHex(0, add_prefix = false) + ":"
+                    result += IRenderer.getRenderer().toHex(0, add_prefix = false) + ":"
                 }
                 for (chr: Char in text.toCharArray()) {
                     if (curline.length == charsperline) {
                         result += "  $curline\n"
-                        result += Renderer.toHex(i, add_prefix = false) + ":"
+                        result += IRenderer.getRenderer().toHex(i, add_prefix = false) + ":"
                         curline = ""
                     }
                     if (curline.length % charchunk == 0) {
                         result += " "
                     }
                     val cv = chr.toInt()
-                    result += Renderer.toHex(cv, 2, false)
+                    result += IRenderer.getRenderer().toHex(cv, 2, false)
                     curline += when (cv) {
                         !in 32..126 -> "."
                         else -> chr.toString()

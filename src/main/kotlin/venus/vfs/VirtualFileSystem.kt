@@ -10,6 +10,7 @@ import kotlin.browser.window
 
     companion object {
         val LSName = "VFS_DATA"
+        var useNode: Boolean = true
 
         fun getPath(path: String): ArrayList<String> {
             return path.split(VFSObject.separator) as ArrayList
@@ -17,6 +18,10 @@ import kotlin.browser.window
 
         fun makePath(path: ArrayList<String>): String {
             return path.joinToString(VFSObject.separator)
+        }
+
+        fun setUseNode(useNode : Boolean) {
+            VirtualFileSystem.useNode = useNode;
         }
     }
 
@@ -252,6 +257,29 @@ import kotlin.browser.window
     fun getObjectFromPath(path: String, make: Boolean = false, location: VFSObject? = null): VFSObject? {
 
         val splitpath = getPath(path)
+
+        if (!useNode) {
+            var templocation = if (path.startsWith("/")) {
+                splitpath.removeAt(0)
+                sentinel
+            } else {
+                location ?: currentLocation
+            }
+            for (obj in splitpath) {
+                if (obj == "") {
+                    continue
+                }
+                if (!templocation.containsChild(obj)) {
+                    if (make) {
+                        templocation.addChild(VFSFile(obj, templocation))
+                    } else {
+                        return null
+                    }
+                }
+                templocation = templocation.getChild(obj) as VFSObject
+            }
+            return templocation
+        }
 
         if (path == "" || path == "/") {
             return sentinel

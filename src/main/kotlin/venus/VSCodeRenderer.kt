@@ -25,7 +25,7 @@ external fun require(module: String): dynamic
  *
  * @todo break this up into multiple objects
  */
-internal object Renderer : IRenderer  {
+@JsName("VSCodeRenderer") object VSCodeRenderer : IRenderer  {
 
     @JsName("emitter") private var eventEmitter: dynamic = null
 

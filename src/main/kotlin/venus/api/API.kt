@@ -3,7 +3,7 @@ package venus.api
 /* ktlint-disable no-wildcard-imports */
 import org.w3c.dom.*
 import venus.Driver
-import venus.Renderer
+import venus.IRenderer
 import kotlin.browser.document
 import kotlin.dom.addClass
 import kotlin.dom.hasClass
@@ -47,7 +47,7 @@ import kotlin.dom.hasClass
     }
 
     @JsName("addMainTab") fun addMainTab(name: String): Element? {
-        if (Renderer.mainTabs.contains(name)) {
+        if (IRenderer.getRenderer().mainTabs.contains(name)) {
             console.error("Tabs MUST have unique names!")
             return null
         }
@@ -73,7 +73,7 @@ import kotlin.dom.hasClass
         s.setAttribute("style", "display:none;")
         document.body!!.appendChild(s)
 
-        Renderer.mainTabs.add(name)
+        IRenderer.getRenderer().mainTabs.add(name)
         s.innerHTML = "TEST"
         return s
     }
@@ -105,7 +105,7 @@ import kotlin.dom.hasClass
         if (t.hasClass("is-active")) {
             hideMainTab(name)
         }
-        Renderer.mainTabs.remove(name)
+        IRenderer.getRenderer().mainTabs.remove(name)
         t.remove()
         v.remove()
         return true
